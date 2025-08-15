@@ -1,0 +1,7 @@
+credentials
+data
+media
+service_account_way
+.env
+test.py
+__pycache__
