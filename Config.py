@@ -51,3 +51,9 @@ class Config:
     @staticmethod
     def is_admin(user_id: int) -> bool:
         return db.is_admin(user_id)
+
+
+    @staticmethod
+    def create_folders():
+        os.makedirs("data", exist_ok=True)
+        os.makedirs("media", exist_ok=True)

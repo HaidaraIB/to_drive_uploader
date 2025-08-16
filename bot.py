@@ -113,7 +113,9 @@ async def post_init(context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == "__main__":
-    # Initialize database
+
+    Config.create_folders()
+
     db = Database()
 
     defaults = Defaults(parse_mode=ParseMode.HTML)
