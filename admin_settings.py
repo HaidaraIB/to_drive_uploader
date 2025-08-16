@@ -41,7 +41,13 @@ async def add_admin_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ):
         user = update.message.users_shared.users[0]
         selected_user_id = user.user_id
-        user_chat = await context.bot.get_chat(selected_user_id)
+        try:
+            user_chat = await context.bot.get_chat(selected_user_id)
+        except:
+            await update.message.reply_text(
+                "تأكد من أن حساب الآدمن الذي تريد إضافته قد بدأ محادثة مع البوت أولاً ⚠️",
+            )
+            return
 
         if Config.is_admin(selected_user_id):
             await update.message.reply_text(

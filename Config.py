@@ -10,10 +10,15 @@ load_dotenv()
 
 
 class Config:
+    API_ID = int(os.getenv("API_ID"))
+    API_HASH = os.getenv("API_HASH")
+    PHONE = os.getenv("PHONE")
+    SESSION = os.getenv("SESSION")
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE")
     REFRESH_TOKEN_FILE = os.getenv("REFRESH_TOKEN_FILE")
     OWNER_ID = int(os.getenv("OWNER_ID"))
+    MEDIA_CHANNEL_ID = int(os.getenv("MEDIA_CHANNEL_ID"))
     SCOPES = ["https://www.googleapis.com/auth/drive"]
 
     @staticmethod
@@ -51,7 +56,6 @@ class Config:
     @staticmethod
     def is_admin(user_id: int) -> bool:
         return db.is_admin(user_id)
-
 
     @staticmethod
     def create_folders():

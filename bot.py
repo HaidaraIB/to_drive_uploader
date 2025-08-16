@@ -41,6 +41,7 @@ from upload_settings import (
     folder_choice,
     upload_process,
 )
+from TeleClientSingleton import TeleClientSingleton
 from Config import Config
 from database import Database
 from warnings import filterwarnings
@@ -252,5 +253,10 @@ if __name__ == "__main__":
     app.add_handler(start_cmd)
     app.add_handler(cancel_cmd)
 
+    client = TeleClientSingleton()
+
     app.run_polling(close_loop=False)
+
+    client.disconnect()
+
     db.close()

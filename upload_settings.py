@@ -2,6 +2,7 @@ from telegram import Chat, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ConversationHandler, ContextTypes
 from DriveServiceSingleton import DriveServiceSingleton
 from Config import Config
+from TeleClientSingleton import TeleClientSingleton
 import os
 
 DRIVE_FOLDER, FILE = range(2)
@@ -19,7 +20,7 @@ async def upload_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [
                 InlineKeyboardButton(
                     folder["name"],
-                    callback_data=f"upto {folder["folder_id"]}",
+                    callback_data=f"upto {folder['folder_id']}",
                 )
             ]
             for folder in folders
@@ -46,33 +47,88 @@ async def upload_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update.effective_user.id
     ):
         folder_id = context.user_data["folder_id_to_upload_to"]
-        file = (
-            await update.message.document.get_file()
-            if update.message.document
-            else (
-                await update.message.video.get_file()
-                if update.message.video
+        message = update.message
+
+        # Determine file name
+        if message.document:
+            file_name = message.document.file_name
+        elif message.video:
+            file_name = message.video.file_name or f"video_{message.video.file_id}.mp4"
+        elif message.audio:
+            file_name = message.audio.file_name or f"audio_{message.audio.file_id}.mp3"
+        elif message.photo:
+            file_name = f"photo_{message.photo[-1].file_id}.jpg"
+        else:
+            await message.reply_text("نوع الملف غير مدعوم ⚠️")
+            return ConversationHandler.END
+
+        download_path = f"media/{file_name}"
+
+        await message.reply_text("جاري التحميل إلى السيرفر ⏳")
+
+        # Check file size to determine download method
+        file_size = 0
+        if message.document:
+            file_size = message.document.file_size
+        elif message.video:
+            file_size = message.video.file_size
+        elif message.audio:
+            file_size = message.audio.file_size
+        elif message.photo:
+            file_size = message.photo[-1].file_size
+
+        if file_size and file_size > 20 * 1024 * 1024:  # 20MB
+            # Use Telethon for large files
+            try:
+                client = TeleClientSingleton()
+                fwdd_msg = await context.bot.forward_message(
+                    chat_id=Config.MEDIA_CHANNEL_ID,
+                    from_chat_id=update.effective_chat.id,
+                    message_id=update.effective_message.id,
+                )
+                # Get the message using Telethon
+                telethon_message = await client.get_messages(
+                    Config.MEDIA_CHANNEL_ID, ids=fwdd_msg.id
+                )
+
+                # Download using Telethon
+                await client.download_media(telethon_message, file=download_path)
+
+                if not download_path or not os.path.exists(download_path):
+                    await message.reply_text("فشل تحميل الملف ⚠️")
+                    return ConversationHandler.END
+            except Exception as e:
+                await message.reply_text(f"حدث خطأ أثناء تحميل الملف الكبير: {str(e)}")
+                return ConversationHandler.END
+        else:
+            # Use regular bot API for small files
+            file = (
+                await message.document.get_file()
+                if message.document
                 else (
-                    await update.message.audio.get_file()
-                    if update.message.audio
-                    else await update.message.photo[-1].get_file()
+                    await message.video.get_file()
+                    if message.video
+                    else (
+                        await message.audio.get_file()
+                        if message.audio
+                        else await message.photo[-1].get_file()
+                    )
                 )
             )
-        )
+            await file.download_to_drive(download_path)
 
-        file_path = file.file_path
-        file_name = os.path.basename(file_path)
+        await message.reply_text("جاري الرفع إلى Google Drive 📤")
 
-        await update.message.reply_text("جاري التحميل إلى السيرفر ⏳")
+        try:
+            file = DriveServiceSingleton().upload_file(download_path, folder_id)
+            await message.reply_text(
+                f"تم الرفع بنجاح ✅: <a href='{file.get('webViewLink')}'>الرابط 🔗</a>"
+            )
+        except Exception as e:
+            await message.reply_text(f"حدث خطأ أثناء الرفع إلى Google Drive: {str(e)}")
 
-        download_path = await file.download_to_drive(f"media/{file_name}")
+        # Clean up
+        if os.path.exists(download_path):
+            os.remove(download_path)
 
-        await update.message.reply_text("جاري الرفع إلى Google Drive 📤")
-
-        file = DriveServiceSingleton().upload_file(str(download_path), folder_id)
-        await update.message.reply_text(
-            f"تم الرفع بنجاح ✅: <a href='{file.get('webViewLink')}'>الرابط 🔗</a>"
-        )
-
-        os.remove(download_path)
         return ConversationHandler.END

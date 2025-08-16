@@ -5,3 +5,5 @@ service_account_way
 .env
 test.py
 __pycache__
+*.session
+*.session-journal
