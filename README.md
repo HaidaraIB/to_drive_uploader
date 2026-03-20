@@ -102,74 +102,11 @@ Folders and the database are initialized automatically on first run (`Config.cre
 python bot.py
 ```
 
-## Run with systemd on Ubuntu VPS (instead of screen)
+## Systemd guide (Ubuntu VPS)
 
-This project includes ready-to-use files for `systemd`:
+For a complete step-by-step guide (same style you requested), see:
 
-- `systemd/to-drive-uploader.service` (service template)
-- `deploy/ubuntu/setup_systemd.sh` (setup script)
-
-### 1) Prepare server dependencies
-
-```sh
-sudo apt update
-sudo apt install -y python3 python3-venv python3-pip
-```
-
-### 2) Upload/clone the project on VPS
-
-Example path:
-
-```sh
-/opt/to_drive_uploader
-```
-
-Make sure these exist in project root:
-
-- `.env`
-- `credentials/credentials.json`
-- `credentials/refresh_token.txt`
-
-### 3) Create a dedicated Linux user (recommended)
-
-```sh
-sudo useradd -r -m -d /opt/to_drive_uploader -s /usr/sbin/nologin botuser || true
-sudo chown -R botuser:botuser /opt/to_drive_uploader
-```
-
-### 4) Install and start the service
-
-```sh
-cd /opt/to_drive_uploader
-sudo bash deploy/ubuntu/setup_systemd.sh \
-  --project-dir /opt/to_drive_uploader \
-  --user botuser \
-  --group botuser \
-  --service-name to-drive-uploader
-```
-
-### 5) Check health and logs
-
-```sh
-sudo systemctl status to-drive-uploader.service
-sudo journalctl -u to-drive-uploader.service -f
-```
-
-### 6) Useful service commands
-
-```sh
-sudo systemctl restart to-drive-uploader.service
-sudo systemctl stop to-drive-uploader.service
-sudo systemctl disable to-drive-uploader.service
-```
-
-If you update dependencies or code, restart service:
-
-```sh
-cd /opt/to_drive_uploader
-sudo -u botuser ./.venv/bin/pip install -r requirements.txt
-sudo systemctl restart to-drive-uploader.service
-```
+- `docs/SYSTEMD_GUIDE.md`
 
 ## Obtaining Google Drive Folder IDs
 
